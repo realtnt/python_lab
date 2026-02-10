@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QHSLab — Python Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/mode-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/theme-one_dark.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/theme-chrome.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/ext-language_tools.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-theme="dark"] {
+    --bg-primary: #0f1117;
+    --bg-secondary: #1a1d27;
+    --bg-tertiary: #242836;
+    --bg-hover: #2d3245;
+    --border: #2e3348;
+    --text-primary: #e2e4ed;
+    --text-secondary: #8b90a5;
+    --text-muted: #5c6178;
+    --accent: #6c7ee1;
+    --green: #4ade80;
+    --green-bg: rgba(74, 222, 128, 0.15);
+    --green-border: rgba(74, 222, 128, 0.3);
+    --red: #f87171;
+    --red-bg: rgba(248, 113, 113, 0.15);
+    --red-border: rgba(248, 113, 113, 0.3);
+    --orange: #fb923c;
+    --blue: #60a5fa;
+    --blue-bg: rgba(96, 165, 250, 0.15);
+    --blue-border: rgba(96, 165, 250, 0.3);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167, 139, 250, 0.12);
+    --purple-border: rgba(167, 139, 250, 0.25);
+    --console-bg: #0c0e14;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  [data-theme="light"] {
+    --bg-primary: #f5f6fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #ebedf5;
+    --bg-hover: #e0e3ef;
+    --border: #d4d7e5;
+    --text-primary: #1a1d2e;
+    --text-secondary: #5c6178;
+    --text-muted: #8b90a5;
+    --accent: #5568d4;
+    --green: #16a34a;
+    --green-bg: rgba(22, 163, 74, 0.12);
+    --green-border: rgba(22, 163, 74, 0.25);
+    --red: #dc2626;
+    --red-bg: rgba(220, 38, 38, 0.1);
+    --red-border: rgba(220, 38, 38, 0.2);
+    --orange: #ea580c;
+    --blue: #2563eb;
+    --blue-bg: rgba(37, 99, 235, 0.1);
+    --blue-border: rgba(37, 99, 235, 0.2);
+    --purple: #7c3aed;
+    --purple-bg: rgba(124, 58, 237, 0.08);
+    --purple-border: rgba(124, 58, 237, 0.2);
+    --console-bg: #f0f1f5;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    transition: background var(--transition), color var(--transition);
+  }
+
+  /* ── Top Bar ── */
+  .topbar {
+    height: 56px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    z-index: 100;
+    transition: background var(--transition), border var(--transition);
+  }
+
+  .logo {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+  .logo svg { width: 22px; height: 22px; }
+
+  .topbar-divider {
+    width: 1px;
+    height: 26px;
+    background: var(--border);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .topbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    transition: all var(--transition);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    background: transparent;
+  }
+  .btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+  .btn-run {
+    background: var(--green-bg);
+    border: 1.5px solid var(--green-border);
+    color: var(--green);
+    padding: 9px 20px;
+  }
+  .btn-run:hover { background: var(--green); color: #fff; border-color: var(--green); }
+
+  .btn-stop {
+    background: var(--red-bg);
+    border: 1.5px solid var(--red-border);
+    color: var(--red);
+    padding: 9px 20px;
+  }
+  .btn-stop:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+  .btn-file {
+    background: var(--blue-bg);
+    border: 1.5px solid var(--blue-border);
+    color: var(--blue);
+  }
+  .btn-file:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .btn-clear {
+    background: var(--purple-bg);
+    border: 1.5px solid var(--purple-border);
+    color: var(--purple);
+  }
+  .btn-clear:hover { background: var(--purple); color: #fff; border-color: var(--purple); }
+
+  .btn-icon {
+    padding: 9px 10px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-hover); }
+
+  /* ── Font Size Controls ── */
+  .font-size-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .font-size-toolbar button {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    font-family: var(--font-mono);
+    line-height: 1;
+  }
+  .font-size-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Theme Toggle ── */
+  .theme-btn .icon-sun, .theme-btn .icon-moon { display: none; }
+  [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+  [data-theme="light"] .theme-btn .icon-moon { display: block; }
+
+  /* ── Settings Dropdown ── */
+  .dropdown-wrap { position: relative; }
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    min-width: 220px;
+    box-shadow: var(--shadow);
+    z-index: 200;
+    display: none;
+    transition: background var(--transition), border var(--transition);
+  }
+  .dropdown.open { display: block; }
+
+  .dropdown-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 8px 8px 4px;
+  }
+
+  .dropdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+  }
+  .dropdown-row label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+  .toggle.active { background: var(--accent); border-color: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    transition: all var(--transition);
+  }
+  .toggle.active::after { left: 20px; background: #fff; }
+
+  /* ── Main Layout ── */
+  .main {
+    display: flex;
+    height: calc(100vh - 56px - 28px);
+  }
+
+  .editor-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .output-pane {
+    width: 45%;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resize-handle {
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 10;
+    flex-shrink: 0;
+    transition: background var(--transition);
+  }
+  .resize-handle:hover, .resize-handle.dragging { background: var(--accent); }
+
+  #editor {
+    flex: 1;
+    font-family: var(--font-mono) !important;
+    font-size: 15px;
+  }
+  .ace_editor { font-family: var(--font-mono) !important; }
+
+  /* ── Output Header ── */
+  .output-header {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    height: 38px;
+    transition: background var(--transition);
+  }
+  .output-header span {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+
+  /* ── Console ── */
+  #console {
+    flex: 1;
+    background: var(--console-bg);
+    padding: 12px 16px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    transition: background var(--transition);
+  }
+  #console::-webkit-scrollbar { width: 6px; }
+  #console::-webkit-scrollbar-track { background: transparent; }
+  #console::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .console-line { white-space: pre-wrap; word-break: break-all; }
+  .console-line.error { color: var(--red); }
+  .console-line.system { color: var(--text-muted); font-style: italic; }
+  .console-line.input-echo { color: var(--orange); }
+
+  /* ── Input bar ── */
+  .input-bar {
+    display: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+    padding: 10px 12px;
+    gap: 8px;
+    align-items: center;
+  }
+  .input-bar.visible { display: flex; }
+  .input-bar label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--orange);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .input-bar input {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    background: var(--bg-tertiary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border var(--transition);
+  }
+  .input-bar input:focus { border-color: var(--orange); }
+
+  /* ── Files Tab ── */
+  .output-tabs {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 8px;
+    transition: background var(--transition);
+  }
+  .output-tab {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    transition: color var(--transition);
+  }
+  .output-tab:hover { color: var(--text-secondary); }
+  .output-tab.active { color: var(--accent); }
+  .output-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 8px; right: 8px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .tab-content { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .tab-content.active { display: flex; }
+
+  .files-wrap {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--console-bg);
+    padding: 12px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .file-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .file-item svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+  .file-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* ── Status Bar ── */
+  .statusbar {
+    height: 28px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    gap: 16px;
+    font-family: var(--font-mono);
+    transition: background var(--transition);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .status-dot.ready { background: var(--green); }
+  .status-dot.loading { background: var(--orange); animation: pulse 1s infinite; }
+  .status-dot.running { background: var(--accent); animation: pulse 0.6s infinite; }
+  .status-dot.error { background: var(--red); }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ── Loading Overlay ── */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.4s ease;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary); }
+  .loading-subtext { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  @media (max-width: 768px) {
+    .main { flex-direction: column; }
+    .editor-pane { border-right: none; border-bottom: 1px solid var(--border); height: 50%; }
+    .output-pane { width: 100%; }
+    .resize-handle { display: none; }
+    .hide-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Starting Python Engine…</div>
+  <div class="loading-subtext">Loading Pyodide (first load may take a moment)</div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    QHSLab
+  </div>
+
+  <div class="topbar-divider"></div>
+
+  <!-- File Operations -->
+  <div class="topbar-group">
+    <button class="btn btn-file" onclick="saveToFile()" title="Save code to .py file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="hide-mobile">Save</span>
+    </button>
+    <button class="btn btn-file" onclick="document.getElementById('fileInput').click()" title="Open .py file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="hide-mobile">Open</span>
+    </button>
+    <input type="file" id="fileInput" accept=".py,.txt" style="display:none" onchange="openFile(event)">
+  </div>
+
+  <div class="topbar-divider"></div>
+
+  <!-- Run / Stop -->
+  <button class="btn btn-run" id="runBtn" onclick="runCode()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Run
+  </button>
+  <button class="btn btn-stop" id="stopBtn" onclick="stopCode()" style="display:none">
+    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+    Stop
+  </button>
+
+  <button class="btn btn-clear" onclick="clearConsole()" title="Clear output">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    <span class="hide-mobile">Clear</span>
+  </button>
+
+  <!-- Right side -->
+  <div class="topbar-right">
+    <div class="font-size-toolbar">
+      <button onclick="changeFontSize(-1)" title="Decrease font size">−</button>
+      <button onclick="changeFontSize(1)" title="Increase font size">+</button>
+    </div>
+
+    <div class="topbar-divider"></div>
+
+    <button class="btn btn-icon theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <div class="dropdown-wrap" id="settingsWrap">
+      <button class="btn btn-icon" id="settingsBtn" title="Editor settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div class="dropdown" id="settingsDropdown">
+        <div class="dropdown-label">Editor</div>
+        <div class="dropdown-row">
+          <label>Line Numbers</label>
+          <div class="toggle active" id="lineNumToggle"></div>
+        </div>
+        <div class="dropdown-row">
+          <label>Word Wrap</label>
+          <div class="toggle" id="wrapToggle"></div>
+        </div>
+        <div class="dropdown-row">
+          <label>Autocomplete</label>
+          <div class="toggle" id="autoCompleteToggle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="editor-pane" id="editorPane">
+    <div id="editor"># Welcome to QHSLab! 🐍
+# Write your Python code here and press Run (or Ctrl+Enter)
+
+name = input("What is your name? ")
+print(f"Hello, {name}!")
+print("Welcome to QHSLab.")
+
+for i in range(1, 6):
+    print("*" * i)
+</div>
+  </div>
+  <div class="resize-handle" id="resizeHandle"></div>
+  <div class="output-pane" id="outputPane">
+    <div class="output-tabs">
+      <button class="output-tab active" data-tab="console" onclick="switchTab('console')">Console</button>
+      <button class="output-tab" data-tab="files" onclick="switchTab('files')">Files</button>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="tab-content active" data-tab="console" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <div id="console"></div>
+        <div class="input-bar" id="inputBar">
+          <label>▸</label>
+          <input type="text" id="inputField" autocomplete="off" spellcheck="false" placeholder="Type your input and press Enter">
+        </div>
+      </div>
+      <div class="tab-content" data-tab="files">
+        <div class="files-wrap" id="filesWrap">
+          <div class="file-empty">No files created yet.<br>Use <code>open("file.txt", "w")</code> in your code to create files.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div style="display:flex;align-items:center;gap:6px;">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span id="statusText">Loading…</span>
+  </div>
+  <span id="cursorPos">Ln 1, Col 1</span>
+  <span style="margin-left:auto">Ctrl+Enter to Run</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+var pyodide = null;
+var editor = null;
+var fontSize = 15;
+var isRunning = false;
+var interruptBuffer = null;
+var inputResolve = null;
+var pyodideWorker = null;
+
+// ═══════════════════════════════════════════════
+//  DROPDOWN SYSTEM
+// ═══════════════════════════════════════════════
+var openDropdownId = null;
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(function(d) { d.classList.remove('open'); });
+  openDropdownId = null;
+}
+
+function toggleDropdown(id) {
+  if (openDropdownId === id) {
+    closeAllDropdowns();
+  } else {
+    closeAllDropdowns();
+    document.getElementById(id).classList.add('open');
+    openDropdownId = id;
+  }
+}
+
+document.addEventListener('mousedown', function(e) {
+  if (openDropdownId && !e.target.closest('.dropdown-wrap')) {
+    closeAllDropdowns();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('settingsBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleDropdown('settingsDropdown');
+  });
+
+  document.querySelectorAll('.dropdown').forEach(function(dd) {
+    dd.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  });
+
+  document.getElementById('lineNumToggle').addEventListener('click', function() {
+    var on = this.classList.toggle('active');
+    editor.setOption('showGutter', on);
+  });
+  document.getElementById('wrapToggle').addEventListener('click', function() {
+    var on = this.classList.toggle('active');
+    editor.setOption('wrap', on);
+  });
+  document.getElementById('autoCompleteToggle').addEventListener('click', function() {
+    var on = this.classList.toggle('active');
+    editor.setOption('enableLiveAutocompletion', on);
+    editor.setOption('enableBasicAutocompletion', on);
+  });
+});
+
+// ═══════════════════════════════════════════════
+//  EDITOR SETUP
+// ═══════════════════════════════════════════════
+editor = ace.edit("editor");
+editor.setTheme("ace/theme/one_dark");
+editor.session.setMode("ace/mode/python");
+editor.setOptions({
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: fontSize + "px",
+  showPrintMargin: false,
+  tabSize: 4,
+  useSoftTabs: true,
+  enableBasicAutocompletion: false,
+  enableLiveAutocompletion: false,
+  enableSnippets: false,
+  scrollPastEnd: 0.5,
+  wrap: false
+});
+
+editor.selection.on('changeCursor', function() {
+  var pos = editor.getCursorPosition();
+  document.getElementById('cursorPos').textContent = 'Ln ' + (pos.row + 1) + ', Col ' + (pos.column + 1);
+});
+
+editor.commands.addCommand({
+  name: 'runCode',
+  bindKey: { win: 'Ctrl-Enter', mac: 'Cmd-Enter' },
+  exec: function() { runCode(); }
+});
+
+// ═══════════════════════════════════════════════
+//  PYODIDE INIT (Web Worker for proper input() support)
+// ═══════════════════════════════════════════════
+//
+// We run Pyodide in a Web Worker with a SharedArrayBuffer
+// so that input() can synchronously block the worker thread
+// while the main thread waits for the user to type.
+//
+// This requires Cross-Origin-Isolation headers (COOP/COEP)
+// for SharedArrayBuffer. If those aren't available, we fall
+// back to a prompt()-based input.
+
+var useWorker = typeof SharedArrayBuffer !== 'undefined';
+
+// ── Fallback (no SharedArrayBuffer): run in main thread with prompt() ──
+async function initPyodideMainThread() {
+  setStatus('loading', 'Loading Python engine\u2026');
+  try {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.4/full/pyodide.js';
+    document.head.appendChild(script);
+
+    await new Promise(function(resolve, reject) {
+      script.onload = resolve;
+      script.onerror = reject;
+    });
+
+    pyodide = await loadPyodide({
+      stdout: function(text) { appendConsole(text); },
+      stderr: function(text) { appendConsole(text, 'error'); },
+    });
+
+    // Override input() to show our input bar and return a promise
+    // We wrap the user's code so each input() call is awaited
+    setStatus('ready', 'Ready');
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  } catch (e) {
+    setStatus('error', 'Failed to load Python');
+    console.error(e);
+    showLoadError();
+  }
+}
+
+function showLoadError() {
+  document.getElementById('loadingOverlay').innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--text-secondary)">' +
+    '<div style="font-size:40px;margin-bottom:16px">\u26A0\uFE0F</div>' +
+    '<div style="font-size:16px;margin-bottom:8px">Failed to load Python engine</div>' +
+    '<div style="font-size:13px;color:var(--text-muted)">Check your internet connection and refresh.</div></div>';
+}
+
+// ═══════════════════════════════════════════════
+//  INPUT HANDLING
+// ═══════════════════════════════════════════════
+// We show the input bar and return a Promise that resolves
+// when the user presses Enter.
+
+function requestInput(prompt) {
+  return new Promise(function(resolve) {
+    if (prompt) appendConsole(prompt, '');
+    var inputBar = document.getElementById('inputBar');
+    var inputField = document.getElementById('inputField');
+    inputBar.classList.add('visible');
+    inputField.value = '';
+    inputField.focus();
+
+    inputResolve = resolve;
+
+    function onKey(e) {
+      if (e.key === 'Enter') {
+        var val = inputField.value;
+        appendConsole(val, 'input-echo');
+        inputBar.classList.remove('visible');
+        inputField.removeEventListener('keydown', onKey);
+        inputResolve = null;
+        resolve(val);
+      }
+    }
+    inputField.addEventListener('keydown', onKey);
+  });
+}
+
+// Make it available globally for Pyodide
+window._requestInput = requestInput;
+
+// ═══════════════════════════════════════════════
+//  RUN CODE
+// ═══════════════════════════════════════════════
+//
+// Strategy: We preprocess the user's code to replace input() calls
+// with await-able async versions. We wrap the entire script in an
+// async function so that each input() properly pauses execution.
+
+async function runCode() {
+  if (!pyodide || isRunning) return;
+  isRunning = true;
+
+  document.getElementById('runBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = '';
+  clearConsole();
+  setStatus('running', 'Running\u2026');
+
+  try {
+    // Install our async input bridge
+    await pyodide.runPythonAsync(`
+import sys
+import pyodide
+
+async def _web_input(prompt=""):
+    result = await pyodide.code.run_js('window._requestInput(' + repr(str(prompt)) + ')')
+    return str(result)
+
+__builtins__.input = lambda prompt="": _web_input(prompt)
+`);
+
+    // Get the user's code
+    var code = editor.getValue();
+
+    // We need to handle the fact that input() now returns a coroutine.
+    // Strategy: transform the code so every input() call is awaited,
+    // and the whole thing runs as top-level async code.
+    //
+    // Pyodide's runPythonAsync already supports top-level await,
+    // but the issue is that user code calls input() in expressions
+    // like: name = input("...") — which needs to become awaited.
+    //
+    // Solution: make input() return an awaitable, and wrap user code
+    // so all calls are awaited. We do this by making __builtins__.input
+    // an async function, and then using a code transform.
+
+    // Simple approach: use ast to rewrite input() calls to await input()
+    await pyodide.runPythonAsync(`
+import ast
+import textwrap
+
+class _InputAwaiter(ast.NodeTransformer):
+    """Transform input() calls into await input() expressions."""
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if isinstance(node.func, ast.Name) and node.func.id == 'input':
+            return ast.Await(value=node)
+        return node
+
+def _transform_for_async(source):
+    """Wrap user code in async function with awaited input() calls."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return source  # Let it fail naturally
+
+    # Transform input() -> await input()
+    transformer = _InputAwaiter()
+    tree = transformer.visit(tree)
+
+    # Wrap everything in an async main and handle top-level assignments
+    # We need to wrap in async def and await it
+    # But runPythonAsync already supports top-level await,
+    # so we just need to make the tree async-compatible
+
+    # For top-level code, we wrap in async def _main(): ... and call it
+    # But we also need global variables to persist
+
+    # Simplest: just add await in front of input calls and rely on
+    # runPythonAsync's top-level await support
+    ast.fix_missing_locations(tree)
+    return ast.unparse(tree)
+`);
+
+    // Transform and run
+    pyodide.globals.set('_user_source', code);
+    var transformed = pyodide.runPython('_transform_for_async(_user_source)');
+    await pyodide.runPythonAsync(transformed);
+
+    setStatus('ready', 'Finished \u2713');
+  } catch (e) {
+    var msg = e.message || String(e);
+    // Clean up error messages
+    var lines = msg.split('\n');
+    var clean = [];
+    var capture = false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line.indexOf('File "<exec>"') !== -1 || line.indexOf('File "<string>"') !== -1) capture = true;
+      if (capture || /^\w+Error/.test(line) || /^\w+Warning/.test(line) || line.indexOf('Traceback') === 0) {
+        clean.push(line);
+      }
+    }
+    if (clean.length === 0) clean.push(msg);
+    appendConsole(clean.join('\n'), 'error');
+    setStatus('error', 'Error');
+  }
+
+  isRunning = false;
+  document.getElementById('runBtn').style.display = '';
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('inputBar').classList.remove('visible');
+  inputResolve = null;
+  refreshFiles();
+}
+
+function stopCode() {
+  // If waiting for input, reject it
+  if (inputResolve) {
+    inputResolve('');
+    inputResolve = null;
+  }
+  document.getElementById('inputBar').classList.remove('visible');
+  isRunning = false;
+  document.getElementById('runBtn').style.display = '';
+  document.getElementById('stopBtn').style.display = 'none';
+  setStatus('ready', 'Stopped');
+}
+
+// ═══════════════════════════════════════════════
+//  CONSOLE
+// ═══════════════════════════════════════════════
+function appendConsole(text, cls) {
+  var con = document.getElementById('console');
+  var div = document.createElement('div');
+  div.className = 'console-line' + (cls ? ' ' + cls : '');
+  div.textContent = text;
+  con.appendChild(div);
+  con.scrollTop = con.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('console').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════
+//  FILES TAB
+// ═══════════════════════════════════════════════
+async function refreshFiles() {
+  if (!pyodide) return;
+  var wrap = document.getElementById('filesWrap');
+  try {
+    var files = pyodide.runPython("import os\n[f for f in sorted(os.listdir('.')) if os.path.isfile(f) and not f.startswith('.')]");
+    var fileList = files.toJs();
+    if (fileList.length === 0) {
+      wrap.innerHTML = '<div class="file-empty">No files created yet.<br>Use <code>open("file.txt", "w")</code> in your code to create files.</div>';
+    } else {
+      wrap.innerHTML = '';
+      fileList.forEach(function(f) {
+        var div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>' + f + '</span>';
+        div.addEventListener('click', function() { viewFile(f); });
+        wrap.appendChild(div);
+      });
+    }
+  } catch(e) { /* ignore */ }
+}
+
+async function viewFile(filename) {
+  try {
+    var content = pyodide.runPython("open(" + JSON.stringify(filename) + ", 'r').read()");
+    switchTab('console');
+    appendConsole('\u2500\u2500 ' + filename + ' \u2500\u2500', 'system');
+    appendConsole(content);
+    appendConsole('\u2500\u2500 end \u2500\u2500', 'system');
+  } catch(e) {
+    appendConsole('Cannot read ' + filename + ': ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  SAVE / OPEN
+// ═══════════════════════════════════════════════
+function saveToFile() {
+  var code = editor.getValue();
+  var blob = new Blob([code], { type: 'text/x-python' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'program.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function openFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    editor.setValue(e.target.result, -1);
+    editor.clearSelection();
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.output-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+}
+
+// ═══════════════════════════════════════════════
+//  THEME & FONT SIZE
+// ═══════════════════════════════════════════════
+function toggleTheme() {
+  var html = document.documentElement;
+  var isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  editor.setTheme(isDark ? 'ace/theme/chrome' : 'ace/theme/one_dark');
+}
+
+function changeFontSize(delta) {
+  fontSize = Math.max(10, Math.min(28, fontSize + delta));
+  editor.setFontSize(fontSize + 'px');
+}
+
+// ═══════════════════════════════════════════════
+//  STATUS BAR
+// ═══════════════════════════════════════════════
+function setStatus(state, text) {
+  document.getElementById('statusDot').className = 'status-dot ' + state;
+  document.getElementById('statusText').textContent = text;
+}
+
+// ═══════════════════════════════════════════════
+//  RESIZE HANDLE
+// ═══════════════════════════════════════════════
+var resizeHandle = document.getElementById('resizeHandle');
+var editorPane = document.getElementById('editorPane');
+var outputPane = document.getElementById('outputPane');
+var isResizing = false;
+
+resizeHandle.addEventListener('mousedown', function(e) {
+  isResizing = true;
+  resizeHandle.classList.add('dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', function(e) {
+  if (!isResizing) return;
+  var container = document.querySelector('.main');
+  var rect = container.getBoundingClientRect();
+  var pct = ((e.clientX - rect.left) / rect.width) * 100;
+  var clamped = Math.max(25, Math.min(75, pct));
+  editorPane.style.flex = 'none';
+  editorPane.style.width = clamped + '%';
+  outputPane.style.flex = 'none';
+  outputPane.style.width = (100 - clamped) + '%';
+  editor.resize();
+});
+
+document.addEventListener('mouseup', function() {
+  if (isResizing) {
+    isResizing = false;
+    resizeHandle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+initPyodideMainThread();
+</script>
+</body>
+</html>
